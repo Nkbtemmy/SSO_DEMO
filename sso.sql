@@ -15,16 +15,20 @@ INSERT INTO core_ssoconfiguration (
     oidc_issuer,
     oidc_client_id,
     oidc_client_secret,
-    oidc_scopes
+    oidc_scopes,
+    created_at,
+    updated_at
 ) VALUES (
-    1, -- Acme Corp
+    'b41628d3-98e6-4f49-b659-4d435b38aba5', -- Acme Corp
     'oidc',
     TRUE,
     'acme.com;acme.org',
     'https://login.microsoftonline.com/12345678-1234-1234-1234-123456789012/v2.0',
     'your-azure-client-id',
     'your-azure-client-secret',
-    'openid profile email'
+    'openid profile email',
+    NOW(),
+    NOW()
 );
 
 -- 3. SAML Configuration (ADFS example)
@@ -36,9 +40,11 @@ INSERT INTO core_ssoconfiguration (
     saml_entity_id,
     saml_idp_sso_url,
     saml_idp_x509cert,
-    saml_nameid_format
+    saml_nameid_format,
+    created_at,
+    updated_at
 ) VALUES (
-    2, -- TechStart Inc
+    'b41628d3-98e6-4f49-b659-4d435b38aba6', -- TechStart Inc
     'saml',
     TRUE,
     'techstart.io',
@@ -47,7 +53,9 @@ INSERT INTO core_ssoconfiguration (
     '-----BEGIN CERTIFICATE-----
 MIICXjCCAcegAwIBAgIJAKS0yiqVrJHiMA0GCSqGSIb3DQEBCwUAMEYxCzAJBgNV...
 -----END CERTIFICATE-----',
-    'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress'
+    'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
+    NOW(),
+    NOW()
 );
 
 -- 4. LDAP Configuration (Active Directory example)
@@ -61,9 +69,11 @@ INSERT INTO core_ssoconfiguration (
     ldap_bind_password,
     ldap_user_search_base,
     ldap_user_filter,
-    ldap_start_tls
+    ldap_start_tls,
+    created_at,
+    updated_at
 ) VALUES (
-    3, -- Enterprise Solutions
+    'b41628d3-98e6-4f49-b659-4d435b38aba7', -- Enterprise Solutions
     'oidc', -- Can still be oidc but with LDAP for verification
     TRUE,
     'enterprise.org',
@@ -72,7 +82,9 @@ INSERT INTO core_ssoconfiguration (
     'service-account-password',
     'DC=enterprise,DC=org',
     '(mail=%(user)s)',
-    FALSE
+    FALSE,
+    NOW(),
+    NOW()
 );
 
 -- 5. Create some sample users (these would be auto-created via JIT provisioning)
