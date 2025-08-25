@@ -1,10 +1,10 @@
 -- Sample Database Setup for Multi-Tenant SSO
 
 -- 1. Create sample organizations
-INSERT INTO accounts_organisation (name, domain) VALUES
-('Acme Corp', 'acme.com'),
-('TechStart Inc', 'techstart.io'),
-('Enterprise Solutions', 'enterprise.org');
+INSERT INTO accounts_organisation (id, name, domain) VALUES
+("b41628d3-98e6-4f49-b659-4d435b38aba5", 'Acme Corp', 'acme.com'),
+("b41628d3-98e6-4f49-b659-4d435b38aba6", 'TechStart Inc', 'techstart.io'),
+("b41628d3-98e6-4f49-b659-4d435b38aba7", 'Enterprise Solutions', 'enterprise.org');
 
 -- 2. OIDC Configuration (Azure AD example)
 INSERT INTO core_ssoconfiguration (
@@ -76,10 +76,10 @@ INSERT INTO core_ssoconfiguration (
 );
 
 -- 5. Create some sample users (these would be auto-created via JIT provisioning)
-INSERT INTO auth_user (email, firstname, lastname, organisation_id, type_account, is_active) VALUES
-('john.doe@acme.com', 'John', 'Doe', 1, 'sso', TRUE),
-('jane.smith@techstart.io', 'Jane', 'Smith', 2, 'sso', TRUE),
-('admin@enterprise.org', 'Admin', 'User', 3, 'ldap', TRUE);
+INSERT INTO auth_user (id,email, firstname, lastname, organisation_id, type_account, is_active) VALUES
+("b41628d3-98e6-4f49-b659-4d435b38aba5", 'john.doe@acme.com', 'John', 'Doe', 1, 'sso', TRUE),
+("b41628d3-98e6-4f49-b659-4d435b38aba6", 'jane.smith@techstart.io', 'Jane', 'Smith', 2, 'sso', TRUE),
+("b41628d3-98e6-4f49-b659-4d435b38aba7", 'admin@enterprise.org', 'Admin', 'User', 3, 'ldap', TRUE);
 
 -- 6. Indexes for performance
 CREATE INDEX idx_sso_config_org ON core_ssoconfiguration(organisation_id);
