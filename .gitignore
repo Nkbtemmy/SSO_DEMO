@@ -1,0 +1,59 @@
+# Python
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+*.swp
+
+# Django
+*.log
+*.pot
+*.mo
+*.db
+*.sqlite3
+media/
+staticfiles/
+local_settings.py
+.env
+
+# Virtualenv
+venv/
+ENV/
+env/
+.venv/
+.envrc
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Migrations
+*/migrations/*.pyc
+*/migrations/*.pyo
+*/migrations/__pycache__/
+*/migrations/*.sqlite3
+*/migrations/*.db
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+
+# Test output
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# DRF specific (if using API docs)
+docs/_build/
+docs/api/
+
+# Node (if using for frontend)
+node_modules/
+npm-debug.log
+yarn-error.log
+.idea/
+.git/
