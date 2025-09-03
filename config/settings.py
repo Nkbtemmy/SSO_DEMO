@@ -150,7 +150,20 @@ AZURE_CLIENT_SECRET = get_env_variable("AZURE_CLIENT_SECRET", "")
 AZURE_REDIRECT_URI = get_env_variable("AZURE_REDIRECT_URI", "http://localhost:8000/auth/sso/azure/callback/")
 
 # Build the authority URL with the actual tenant ID
-AZURE_AUTHORITY = f"https://login.microsoftonline.com/{AZURE_TENANT_ID}"
+AZURE_AUTHORITY = get_env_variable("AZURE_AUTHORITY", f"https://login.microsoftonline.com/common")
+
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID = get_env_variable('GOOGLE_CLIENT_ID', '')
+GOOGLE_CLIENT_SECRET = get_env_variable('GOOGLE_CLIENT_SECRET', '')
+GOOGLE_REDIRECT_URI = get_env_variable('GOOGLE_REDIRECT_URI', 'http://localhost:8000/auth/google/callback/')
+
+# OAuth Scopes (you can customize these based on your needs)
+GOOGLE_OAUTH_SCOPES = [
+    'openid',
+    'email', 
+    'profile'
+]
+
 
 # # OIDC settings
 OIDC_RP_CLIENT_ID = AZURE_CLIENT_ID
