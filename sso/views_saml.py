@@ -17,11 +17,13 @@ def _client(request, cfg):
     settings = build_saml_config_for_org(cfg, sp_entity_id, acs_url)
     client = Saml2Client(config=None)
     client.config.load(settings)
+    
     # Inject IdP metadata
     idp = settings["idp_configs"][0]
     client.metadata.identifiers[idp["entity_id"]] = [idp["entity_id"]]
     client.metadata.single_sign_on_service[idp["entity_id"]] = [(idp["single_sign_on_service"][0]["location"], BINDING_HTTP_REDIRECT)]
     client.metadata.certs[idp["entity_id"]] = {"x509cert": [idp["x509cert"]]}
+    
     return client
 
 class SAMLStartView(View):
@@ -31,13 +33,16 @@ class SAMLStartView(View):
             if cfg.provider_type != "saml":
                 return HttpResponseBadRequest("Organisation not configured for SAML.")
         except Exception as e:
-            return HttpResponseBadRequest(str(e))
+            return HttpResponseBadRequest(f"Error: {str(e)}")
+
         request.session["sso_org_id"] = str(org.id)
         client = _client(request, cfg)
         _, info = client.prepare_for_authenticate()
+        
         for k, v in info["headers"]:
             if k == "Location":
                 return redirect(v)
+        
         return HttpResponseBadRequest("Unable to initiate SAML login.")
 
 class SAMLACSView(View):
@@ -45,33 +50,61 @@ class SAMLACSView(View):
         org_id = request.session.get("sso_org_id")
         if not org_id:
             return HttpResponseBadRequest("Missing organisation session.")
+        
         from core.models import Organisation
         from core.models.sso import SSOConfiguration
-        org = Organisation.objects.get(pk=org_id)
-        cfg = SSOConfiguration.objects.get(organisation=org, enabled=True, provider_type="saml")
-
+        
+        try:
+            org = Organisation.objects.get(pk=org_id)
+            cfg = SSOConfiguration.objects.get(organisation=org, enabled=True, provider_type="saml")
+        except Organisation.DoesNotExist:
+            return HttpResponseBadRequest("Organisation not found.")
+        except SSOConfiguration.DoesNotExist:
+            return HttpResponseBadRequest("SAML configuration not found.")
+        
         client = _client(request, cfg)
         response = client.parse_authn_request_response(request.POST.get("SAMLResponse"), entity.BINDING_HTTP_POST)
+
         if not response or response.ava is None:
             return HttpResponseBadRequest("Invalid SAML response.")
-
+        
         attrs = response.ava
         email = (attrs.get("email") or attrs.get("mail") or attrs.get("User.email") or [None])[0]
         given = (attrs.get("givenName") or attrs.get("first_name") or [None])[0]
         family = (attrs.get("sn") or attrs.get("last_name") or [None])[0]
+
         if not email:
             return HttpResponseBadRequest("No email in SAML assertion.")
-
+        
+        # Update or create the user
         user, created = User.objects.get_or_create(
             email=email,
-            defaults=dict(firstname=given or "", lastname=family or "", organisation=org, type_account="sso", is_active=True),
+            defaults={
+                "first_name": given or "",
+                "last_name": family or "",
+                "organisation": org,
+                "type_account": "sso",
+                "is_active": True
+            }
         )
+        
+        # If user exists, update necessary fields
         if not created:
             changed = False
-            if given and user.firstname != given: user.firstname = given; changed = True
-            if family and user.lastname != family: user.lastname = family; changed = True
-            if not user.organisation: user.organisation = org; changed = True
-            if changed: user.save()
+            if given and user.first_name != given: 
+                user.first_name = given
+                changed = True
+            if family and user.last_name != family:
+                user.last_name = family
+                changed = True
+            if not user.organisation: 
+                user.organisation = org
+                changed = True
+            if changed:
+                user.save()
 
+        # Log the user in
         login(request, user)
+
+        # Redirect to post-login URL
         return redirect(reverse("sso-post-login"))

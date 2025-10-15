@@ -1,0 +1,37 @@
+services:
+  openldap:
+    image: osixia/openldap:1.5.0
+    container_name: test-openldap
+    environment:
+      - LDAP_ORGANISATION=ExampleOrg
+      - LDAP_DOMAIN=example.org
+      - LDAP_ADMIN_PASSWORD=admin
+    ports:
+      - "389:389"
+      - "636:636"
+    networks:
+      - ldap-net
+    volumes:
+      - openldap_data:/var/lib/ldap
+      - openldap_config:/etc/ldap/slapd.d
+
+  phpldapadmin:
+    image: osixia/phpldapadmin:0.9.0
+    container_name: phpldapadmin
+    environment:
+      - PHPLDAPADMIN_LDAP_HOSTS=openldap
+      - PHPLDAPADMIN_HTTPS=false   # easier for local testing
+    ports:
+      - "8080:80"   # easier access on localhost:8080
+    depends_on:
+      - openldap
+    networks:
+      - ldap-net
+
+volumes:
+  openldap_data:
+  openldap_config:
+
+networks:
+  ldap-net:
+    driver: bridge

@@ -5,6 +5,8 @@ Django settings for config project.
 from pathlib import Path
 import os
 from datetime import timedelta
+import ldap
+from django_auth_ldap.config import LDAPSearch, GroupOfNamesType
 
 from config.settings_utils import get_env_variable
 
@@ -23,7 +25,9 @@ INSTALLED_APPS = [
 
     # Third-party
     "rest_framework",
+    "rest_framework_simplejwt",
     "drf_yasg",
+    "drf_spectacular",
 
     # SSO libs
     "mozilla_django_oidc",
@@ -83,18 +87,44 @@ DATABASES = {
 }
 
 AUTHENTICATION_BACKENDS = [
-    "django_auth_ldap.backend.LDAPBackend", 
+    "django_auth_ldap.backend.LDAPBackend",
+    'mozilla_django_oidc.auth.OIDCAuthenticationBackend',
     "sso.backends.MultiTenantOIDCBackend",  # OIDC (Azure Entra ID, etc.)
     "core.backends.MultiTenantOIDCBackend",  # OIDC (Azure Entra ID, etc.)
     "django.contrib.auth.backends.ModelBackend",
 ]
+
+# LDAP server details (Example for AD)
+AUTH_LDAP_SERVER_URI = "ldap://ldap.forumsys.com:389"  # Use ldaps:// for secure connections
+AUTH_LDAP_BIND_DN = "cn=read-only-admin,dc=example,dc=com"
+AUTH_LDAP_BIND_PASSWORD = "password"
+# Search for users in the LDAP directory (modify as per your LDAP structure)
+AUTH_LDAP_USER_SEARCH = LDAPSearch(
+    "OU=Users,DC=example,DC=com",  # The base DN to search within
+    ldap.SCOPE_SUBTREE,  # Search the entire subtree
+    "(sAMAccountName=%(user)s)"  # Use `sAMAccountName` for AD, replace as per your LDAP setup
+)
+
+# LDAP mapping (no direct model access here)
+AUTH_LDAP_USER_FLAGS_BY_GROUP = {}
+AUTH_LDAP_USER_ATTR_MAP = {
+    "first_name": "givenName",
+    "last_name": "sn",
+    "email": "mail",
+}
+
+# Sync groups from AD
+AUTH_LDAP_GROUP_SEARCH = LDAPSearch("OU=Groups,DC=example,DC=com", ldap.SCOPE_SUBTREE, "(objectClass=group)")
+AUTH_LDAP_GROUP_TYPE = GroupOfNamesType()
+AUTH_LDAP_MIRROR_GROUPS = True
+AUTH_LDAP_ALWAYS_UPDATE_USER = True
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",
+        "rest_framework.permissions.AllowAny",
     ),
 }
 
@@ -135,13 +165,6 @@ SECURE_PROXY_SSL_HEADER = (
     "https",
 )
 
-# LDAP mapping (no direct model access here)
-AUTH_LDAP_USER_FLAGS_BY_GROUP = {}
-AUTH_LDAP_USER_ATTR_MAP = {
-    "first_name": "givenName",
-    "last_name": "sn",
-    "email": "mail",
-}
 
 # Azure OIDC settings
 AZURE_TENANT_ID = get_env_variable("AZURE_TENANT_ID", "")
@@ -166,13 +189,22 @@ GOOGLE_OAUTH_SCOPES = [
 
 
 # # OIDC settings
+# Azure AD or Google Workspace OIDC settings
 OIDC_RP_CLIENT_ID = AZURE_CLIENT_ID
 OIDC_RP_CLIENT_SECRET = AZURE_CLIENT_SECRET
 OIDC_RP_SIGN_ALGO = "RS256"
 OIDC_OP_AUTHORIZATION_ENDPOINT = f"https://login.microsoftonline.com/{AZURE_TENANT_ID}/oauth2/v2.0/authorize"
 OIDC_OP_TOKEN_ENDPOINT = f"https://login.microsoftonline.com/{AZURE_TENANT_ID}/oauth2/v2.0/token"
-OIDC_OP_USER_ENDPOINT = "https://graph.microsoft.com/oidc/userinfo"
+# OIDC_OP_USER_ENDPOINT = "https://graph.microsoft.com/oidc/userinfo"
+OIDC_OP_USER_ENDPOINT = "https://graph.microsoft.com/v1.0/me"  # For Azure AD
 OIDC_OP_JWKS_ENDPOINT = f"https://login.microsoftonline.com/{AZURE_TENANT_ID}/discovery/v2.0/keys"
+
+# For Google Workspace:
+# OIDC_OP_AUTHORIZATION_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth"
+# OIDC_OP_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token"
+# OIDC_OP_USER_ENDPOINT = "https://www.googleapis.com/oauth2/v3/userinfo"
+# OIDC_OP_JWKS_ENDPOINT = "https://www.googleapis.com/oauth2/v3/certs"
+
 
 # Add validation to ensure required settings are present
 if not AZURE_TENANT_ID:
